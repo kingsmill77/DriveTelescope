@@ -16,7 +16,7 @@ dataEL = [0,0,0,0]
 NULL = chr(0)
 Azimuth = 0.0
 Elevation = 0.0
-
+#Setting up all the Tkinter Variables, these act as global variables but I think they're a bit safer, also python is terrible at functions
 Root =    tkinter.Tk()
 Az = tkinter.StringVar(Root)
 Az.set("0.0")
@@ -28,7 +28,7 @@ TarEL = tkinter.StringVar(Root)
 TarEL.set("0.0")
 Already = tkinter.BooleanVar(Root)
 Already.set(True)
-#Defining and Opening the port used in the program. Only exiting the program through the GUI will close the Port.
+#Defining and Opening the port used in the program. Only exiting the program through the GUI will close the Port. That needs to change a bit.
 Server = serial.Serial()
 Server.port = 'COM3'
 Server.baudrate = 460800
@@ -42,11 +42,14 @@ Read_Command = Read_String.encode('utf-8')
 
 #The Stop function is the first one to be defined so that it can be inserted into future functions.
 def Stop_Drive():
+    "Stops the Drive"
     Server.write(Stop_Command)
     
 #The read function, it sends the command and then reads the response. See above for a detailed breakdown of the
-#response.[Currently not working as intended]
+#response. Due to wanting the Drive to always move in a certain direction another function BetaSet_Drive() is called
+#That function might need to be tidied up.
 def ReadFunction():
+    "Reads the current position of the drive and passes it back into tkinter."
     Server.write(Read_Command)
     Data = Server.read(11).decode('utf-8')
     Bin = Server.read()
@@ -69,6 +72,7 @@ def ReadFunction():
 #Important function. Can't predefine the command since it changes with the coordinates. Will set an Azimuth and
 #Elevation for the Drive to point at.
 def BetaSet_Drive():
+    "This function is used when the Drive needs to move more than 180 degrees to make sure the drive goes the long way round."
     Target = float(TarAZ.get())
     Current = float(Az.get())
     Comparison = Target - Current
@@ -105,8 +109,9 @@ def BetaSet_Drive():
     time.sleep(0.1)
     Server.write(Set_Command)
     Already.set(True)
-
-def Error_Range():    
+#These two functions are used to correct user error.
+def Error_Range():
+    "Error Analysis"
     Error = tkinter.Toplevel()
     Error.title("Oops, Something went Wrong!")
     message = tkinter.Label(Error, text="Only Azimuths and Elevations between -360 and 360 are allowed. Please choose a different the number.")
@@ -114,7 +119,8 @@ def Error_Range():
     message.pack()
     returnbutton.pack()
 
-def Error_bar():    
+def Error_bar(): 
+    "Error Analysis"
     Error = tkinter.Toplevel()
     Error.title("Oops, Something went Wrong!")
     message = tkinter.Label(Error, text="An Entry was invalid, Please try again only using numbers and periods")
@@ -122,8 +128,12 @@ def Error_bar():
     message.pack()
     returnbutton.pack()
 
-
-def Set_Drive(AZInput, ELInput):
+#Most important function will take in an Az El and make the drive turn to that location. Its pretty robust with the error messages
+#above. Needs BetaSet_Drive to function due to the BREAK part of the code. Important thing about this code is that the Tkinter variables
+#are the key. They are used as checks and balances. Make sure they are all there or that all reference to them is gone otherwise
+#problems will occur.
+def Set_Drive(AZInput, ELInput)
+    "Drives the Drive to a set Azimuth and Elevation"
     BREAK = float(Az.get())+179
     BREAK2 = float(Az.get())-179
     try:
